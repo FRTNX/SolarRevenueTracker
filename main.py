@@ -1,15 +1,20 @@
 import sys
 import datetime
-import PIL
-from PIL import Image
-from matplotlib import pyplot as plt
+from utils import plot_revenue
+
+def fetch_transactions():
+    with open('solar_revenue.csv', 'r') as file:
+        transactions = file.read().split('\n')
+        transaction_amounts = [int(tx.split(',')[0]) for tx in transactions if ',' in tx] # gang gang gang
+        return transaction_amounts
+
+# eventually read from/write to db if things get heavy
+def write_transaction(amount):
+    with open('solar_revenue.csv', 'a') as file:
+        file.write(f'\n{todays_revenue},{str(datetime.datetime.now())}')
 
 if __name__ == '__main__':
-    print('Args: ', sys.argv)
-    file = open('solar_revenue.csv', 'r')
-    transactions = file.read().split('\n')
-    previous_revenue = [int(tx.split(',')[0]) for tx in transactions if ',' in tx] # gang gang gang
-    file.close()
+    previous_revenue = fetch_transactions()
     print(f'Prior Average Solar Revenue: R{round(sum(previous_revenue) / len(previous_revenue), 2)}')
 
     todays_revenue = input('Enter Amount in Rands: ')
@@ -19,21 +24,16 @@ if __name__ == '__main__':
         todays_average = round(sum(previous_revenue) / len(previous_revenue), 2)
         print(f'New Average Solar Revenue: R{todays_average}')
 
-        file = open('solar_revenue.csv', 'a')
-        file.write(f'\n{todays_revenue},{str(datetime.datetime.now())}')
-        file.close()
+        write_transaction(todays_revenue)
 
         if '--plot' in sys.argv:
-            plt.plot(previous_revenue)
-            plt.xlabel('time')
-            plt.ylabel('solar revenue in Rands')
-            plt.title(f'Daily Solar Revenue (average=R{todays_average})')
-            plt.grid(True)
-            plt.savefig('solar_revenue.png', bbox_inches='tight')
-            img = Image.open('solar_revenue.png')
-            wpercent = (400 / float(img.size[0]))
-            hsize = int((float(img.size[1]) * float(wpercent)))
-            img = img.resize((400, hsize), PIL.Image.ANTIALIAS)
-            img.show()
+            params = {
+                'title': f'Daily Solar Revenue (average=R{todays_average})',
+                'xlabel': 'time',
+                'ylabel': 'solar revenue in rands',
+                'image_name': 'solar_revenue.png',
+                'grid': True,
+                'payload': previous_revenue
+            }
 
-
+            plot_revenue(params)
